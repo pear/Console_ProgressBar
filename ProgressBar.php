@@ -20,11 +20,11 @@
  *
  * @package Console_ProgressBar
  * @category Console
- * @version 0.2
+ * @version 0.3
  * @author Stefan Walk <et@php.net>
  * @license http://www.php.net/license/3_0.txt PHP License
  */
-
+ 
 class Console_ProgressBar {
 
     // properties {{{
@@ -52,10 +52,14 @@ class Console_ProgressBar {
      * Options, like the precision used to display the numbers
      */
     var $_options = array();
+     /**
+      * Length to erase
+      */
+    var $_rlen = 0;
     // }}}
     
     // constructor() {{{
-    /**
+    /** 
      * Constructor, sets format and size
      *
      * <pre>
@@ -230,7 +234,15 @@ class Console_ProgressBar {
         $cur = '%2$\''.$options['fraction_pad']{0}.strlen((int)$target_num).'.'
                .$options['fraction_precision'].'f';
         $max = $cur; $max{1} = 3;
-        $perc = '%4$\''.$options['percent_pad']{0}.'3.'
+        // pre php-4.3.7 %3.2f meant 3 characters before . and two after
+        // php-4.3.7 and later it means 3 characters for the whole number
+        if (function_exists('version_compare') 
+                         and version_compare(PHP_VERSION, '4.3.7', 'ge')) {
+            $padding = 4 + $options['percent_precision'];
+        } else {
+            $padding = 3;
+        }
+        $perc = '%4$\''.$options['percent_pad']{0}.$padding.'.'
                 .$options['percent_precision'].'f';
         
         $transitions = array(
@@ -239,7 +251,7 @@ class Console_ProgressBar {
             '%current%' => $cur,
             '%max%' => $max,
             '%percent%' => $perc.'%%',
-            '%bar%' => '%1$s'
+            '%bar%' => '%1$s',
         );
         
         $this->_skeleton = strtr($formatstring, $transitions);
@@ -303,8 +315,16 @@ class Console_ProgressBar {
         $percent = $current / $this->_target_num;
         $filled = round($percent * $this->_blen);
         $visbar = substr($this->_bar, $this->_blen - $filled, $this->_blen);
-        printf($this->_skeleton, $visbar, $current, 
-               $this->_target_num, $percent * 100);
+        $this->_rlen = printf($this->_skeleton, $visbar, $current, 
+                              $this->_target_num, $percent * 100);
+        // fix for php-versions where printf doesn't return anything
+        if (is_null($this->_rlen)) {
+            $this->_rlen = $this->_tlen;
+        // fix for php versions between 4.3.7 and 5.x.y(?)
+        } elseif ($this->_rlen < $this->_tlen) {
+            print str_repeat(' ', $this->_tlen - $this->_rlen);
+            $this->_rlen = $this->_tlen;
+        } 
         return true;
     }
     // }}}
@@ -315,14 +335,13 @@ class Console_ProgressBar {
      *
      * @return bool
      */
-    function erase() 
+    function erase($clear = false) 
     {
-        if ($this->_options['ansi_terminal']) {
+        if ($this->_options['ansi_terminal'] and !$clear) {
             print "\x1b[u"; // restore cursor position
         } else {
-            print str_repeat(chr(8), $this->_tlen);
+            print str_repeat(chr(8), $this->_rlen);
         }
     }
     // }}}
-
 }

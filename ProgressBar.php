@@ -20,7 +20,7 @@
  *
  * @package Console_ProgressBar
  * @category Console
- * @version 0.1
+ * @version 0.2
  * @author Stefan Walk <et@php.net>
  * @license http://www.php.net/license/3_0.txt PHP License
  */
@@ -58,6 +58,7 @@ class Console_ProgressBar {
     /**
      * Constructor, sets format and size
      *
+     * <pre>
      * The Constructor expects 5 to 6 arguments:
      * - The first argument is the format string used to display the progress
      *   bar. It may (and should) contain placeholders that the class will
@@ -115,6 +116,7 @@ class Console_ProgressBar {
      *     ansi_terminal      | false |  If this option is true, a better
      *                        |       |  (faster) method for erasing the bar is
      *                        |       |  used.
+     * </pre>
      *
      * @param string The format string
      * @param string The string filling the progress bar
@@ -124,18 +126,19 @@ class Console_ProgressBar {
      * @param array  Options for the progress bar
      * @see reset
      */ 
-    function Console_ProgressBar($formatstring, $bar, $prefill, $target_num, 
-                                 $width, $options = array()) 
+    function Console_ProgressBar($formatstring, $bar, $prefill, $width, 
+                                  $target_num, $options = array()) 
     {
-        $this->reset($formatstring, $bar, $prefill, $width,
-                     $target_num, $options);
+        $this->reset($formatstring, $bar, $prefill, $width, $target_num, 
+                     $options);
     }
     // }}}
 
-    // {{{ reset($formatstring, $bar, $prefill, $target_num, $width[, $options])
+    // {{{ reset($formatstring, $bar, $prefill, $width, $target_num[, $options])
     /**
      * Re-sets format and size.
      *
+     * <pre>
      * The reset method expects 5 to 6 arguments:
      * - The first argument is the format string used to display the progress
      *   bar. It may (and should) contain placeholders that the class will
@@ -193,6 +196,7 @@ class Console_ProgressBar {
      *     ansi_terminal      | false |  If this option is true, a better
      *                        |       |  (faster) method for erasing the bar is
      *                        |       |  used.
+     * </pre>
      *
      * @param string The format string
      * @param string The string filling the progress bar
@@ -202,7 +206,7 @@ class Console_ProgressBar {
      * @param array  Options for the progress bar
      * @return bool
      */
-    function reset($formatstring, $bar, $prefill, $target_num, $width, 
+    function reset($formatstring, $bar, $prefill, $width, $target_num, 
                    $options = array()) 
     {
         $this->_target_num = $target_num;

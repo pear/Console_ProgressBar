@@ -18,20 +18,23 @@
     </maintainer>
   </maintainers>
   <release>
-    <version>0.2</version>
-    <date>2003-10-26</date>
-    <license>PHP</license>
+    <version>0.4beta</version>
+    <date>2006-03-26</date>
+    <license>MIT</license>
     <state>beta</state>
     <notes>
-      First release.
+      Some Bugfixes...
     </notes>
     <filelist>
       <dir name="/" baseinstalldir="Console">
         <file role="php" 
           name="ProgressBar.php"/> 
         <dir name="examples">
-          <file role="doc"
-            name ="example_and_documentation.php" />
+          <file role="doc" name ="readme.txt" />
+          <file role="doc" name ="simpleexample.php" />
+          <file role="doc" name ="advancedexample.php" />
+          <file role="doc" name ="eta.php" />
+          <file role="doc" name ="elapsed_ansi.php" />
         </dir>
       </dir>
     </filelist>

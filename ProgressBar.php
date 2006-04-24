@@ -1,16 +1,28 @@
 <?php
 /* vim: set expandtab tabstop=4 softtabstop=4 shiftwidth=4: */
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 3.0 of the PHP license,       |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available at through the world-wide-web at                           |
-// | http://www.php.net/license/3_0.txt.                                  |
-// | If you did not receive a copy of the PHP license and are unable to   |
-// | obtain it through the world-wide-web, please send a note to          |
-// | license@php.net so we can mail you a copy immediately.               |
-// +----------------------------------------------------------------------+
-// | Authors: Stefan Walk <et@php.net>                                    |
-// +----------------------------------------------------------------------+
+
+// Copyright (c) 2006 Stefan Walk
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+
+// Authors: Stefan Walk <et@php.net>
 //
 // $Id$
 
@@ -20,9 +32,9 @@
  *
  * @package Console_ProgressBar
  * @category Console
- * @version 0.3
+ * @version 0.4
  * @author Stefan Walk <et@php.net>
- * @license http://www.php.net/license/3_0.txt PHP License
+ * @license MIT License
  */
  
 class Console_ProgressBar {
@@ -56,71 +68,18 @@ class Console_ProgressBar {
       * Length to erase
       */
     var $_rlen = 0;
+     /**
+      * When the progress started
+      */
+    var $_start_time = null;
+    var $_rate_datapoints = array();
     // }}}
     
     // constructor() {{{
     /** 
      * Constructor, sets format and size
      *
-     * <pre>
-     * The Constructor expects 5 to 6 arguments:
-     * - The first argument is the format string used to display the progress
-     *   bar. It may (and should) contain placeholders that the class will
-     *   replace with information like the progress bar itself, the progress in
-     *   percent, and so on. Current placeholders are:
-     *     %bar%         The progress bar
-     *     %current%     The current value
-     *     %max%         The maximum malue (the "target" value)
-     *     %fraction%    The same as %current%/%max%
-     *     %percent%     The status in percent
-     *   More placeholders will follow. A format string like:
-     *   "* stuff.tar %fraction% KB [%bar%] %percent%"
-     *   will lead to a bar looking like this:
-     *   "* stuff.tar 391/900 KB [=====>---------]  43.44%"
-     * - The second argument is the string that is going to fill the progress
-     *   bar. In the above example, the string "=>" was used. If the string you
-     *   pass is too short (like "=>" in this example), the leftmost character
-     *   is used to pad it to the needed size. If the string you pass is too long,
-     *   excessive characters are stripped from the left.
-     * - The third argument is the string that fills the "empty" space in the
-     *   progress bar. In the above example, that would be "-". If the string
-     *   you pass is too short (like "-" in this example), the rightmost
-     *   character is used to pad it to the needed size. If the string you pass
-     *   is too short, excessive characters are stripped from the right.
-     * - The fourth argument specifies the width of the display. If the options
-     *   are left untouched, it will tell how many characters the display should
-     *   use in total. If the "absolute_width" option is set to false, it tells
-     *   how many characters the actual bar (that replaces the %bar%
-     *   placeholder) should use.
-     * - The fifth argument is the target number of the progress bar. For
-     *   example, if you wanted to display a progress bar for a download of a
-     *   file that is 115 KB big, you would pass 115 here.
-     * - The sixth argument optional. If passed, it should contain an array of
-     *   options. For example, passing array('absolute_width' => false) would
-     *   set the absolute_width option to false. Current options are:
-     *
-     *     option             | def.  |  meaning
-     *     --------------------------------------------------------------------
-     *     percent_precision  | 2     |  Number of decimal places to show when
-     *                        |       |  displaying the percentage.
-     *     fraction_precision | 0     |  Number of decimal places to show when
-     *                        |       |  displaying the current or target
-     *                        |       |  number.
-     *     percent_pad        | ' '   |  Character to use when padding the
-     *                        |       |  percentage to a fixed size. Senseful
-     *                        |       |  values are ' ' and '0', but any are
-     *                        |       |  possible.
-     *     fraction_pad       | ' '   |  Character to use when padding max and
-     *                        |       |  current number to a fixed size.
-     *                        |       |  Senseful values are ' ' and '0', but 
-     *                        |       |  any are possible.
-     *     width_absolute     | true  |  If the width passed as an argument
-     *                        |       |  should mean the total size (true) or
-     *                        |       |  the width of the bar alone.
-     *     ansi_terminal      | false |  If this option is true, a better
-     *                        |       |  (faster) method for erasing the bar is
-     *                        |       |  used.
-     * </pre>
+     * See the reset() method for documentation.
      *
      * @param string The format string
      * @param string The string filling the progress bar
@@ -153,6 +112,8 @@ class Console_ProgressBar {
      *     %max%         The maximum malue (the "target" value)
      *     %fraction%    The same as %current%/%max%
      *     %percent%     The status in percent
+     *     %elapsed%     The elapsed time
+     *     %estimate%    An estimate of how long the progress will take
      *   More placeholders will follow. A format string like:
      *   "* stuff.tar %fraction% KB [%bar%] %percent%"
      *   will lead to a bar looking like this:
@@ -200,6 +161,9 @@ class Console_ProgressBar {
      *     ansi_terminal      | false |  If this option is true, a better
      *                        |       |  (faster) method for erasing the bar is
      *                        |       |  used.
+     *     ansi_clear         | false |  If the bar should be cleared everytime
+     *     num_datapoints     | 5     |  How many datapoints to use to create 
+     *                        |       |  the estimated remaining time 
      * </pre>
      *
      * @param string The format string
@@ -221,23 +185,26 @@ class Console_ProgressBar {
             'fraction_pad' => ' ',
             'width_absolute' => true,
             'ansi_terminal' => false,
+            'ansi_clear' => false,
+            'num_datapoints' => 5,
         );
+        $intopts = array();
         foreach ($default_options as $key => $value) {
             if (!isset($options[$key])) {
-                $options[$key] = $value;
+                $intopts[$key] = $value;
             } else {
                 settype($options[$key], gettype($value));
+                $intopts[$key] = $options[$key];
             }
         }
-        $this->_options = $options;
+        $this->_options = $options = $intopts;
         // placeholder
         $cur = '%2$\''.$options['fraction_pad']{0}.strlen((int)$target_num).'.'
                .$options['fraction_precision'].'f';
         $max = $cur; $max{1} = 3;
         // pre php-4.3.7 %3.2f meant 3 characters before . and two after
         // php-4.3.7 and later it means 3 characters for the whole number
-        if (function_exists('version_compare') 
-                         and version_compare(PHP_VERSION, '4.3.7', 'ge')) {
+        if (version_compare(PHP_VERSION, '4.3.7', 'ge')) {
             $padding = 4 + $options['percent_precision'];
         } else {
             $padding = 3;
@@ -252,11 +219,13 @@ class Console_ProgressBar {
             '%max%' => $max,
             '%percent%' => $perc.'%%',
             '%bar%' => '%1$s',
+            '%elapsed%' => '%5$s',
+            '%estimate%' => '%6$s',
         );
         
         $this->_skeleton = strtr($formatstring, $transitions);
 
-        $slen = strlen(sprintf($this->_skeleton, '', 0, 0, 0));
+        $slen = strlen(sprintf($this->_skeleton, '', 0, 0, 0, '00:00:00','00:00:00'));
 
         if ($options['width_absolute']) {
             $blen = $width - $slen;
@@ -274,9 +243,6 @@ class Console_ProgressBar {
         $this->_tlen  = $tlen;
         $this->_first = true;
 
-        if ($options['ansi_terminal']) {
-            print "\x1b[s"; // save cursor position
-        }
 
         return true;
     }
@@ -291,8 +257,13 @@ class Console_ProgressBar {
      */
     function update($current)
     {
+        $this->_addDatapoint($current);
         if ($this->_first) {
+            if ($this->_options['ansi_terminal']) {
+                print "\x1b[s"; // save cursor position
+            }
             $this->_first = false;
+            $this->_start_time = $this->_fetchTime();
             $this->display($current);
             return;
         }
@@ -315,8 +286,14 @@ class Console_ProgressBar {
         $percent = $current / $this->_target_num;
         $filled = round($percent * $this->_blen);
         $visbar = substr($this->_bar, $this->_blen - $filled, $this->_blen);
-        $this->_rlen = printf($this->_skeleton, $visbar, $current, 
-                              $this->_target_num, $percent * 100);
+        $elapsed = $this->_formatSeconds(
+            $this->_fetchTime() - $this->_start_time
+        );
+        $estimate = $this->_formatSeconds($this->_generateEstimate());
+        $this->_rlen = printf($this->_skeleton, 
+            $visbar, $current, $this->_target_num, $percent * 100, $elapsed,
+            $estimate
+        );
         // fix for php-versions where printf doesn't return anything
         if (is_null($this->_rlen)) {
             $this->_rlen = $this->_tlen;
@@ -329,7 +306,7 @@ class Console_ProgressBar {
     }
     // }}}
 
-    // {{{ erase()
+    // {{{ erase($clear = false)
     /**
      * Erases a previously printed bar.
      *
@@ -338,10 +315,72 @@ class Console_ProgressBar {
     function erase($clear = false) 
     {
         if ($this->_options['ansi_terminal'] and !$clear) {
-            print "\x1b[u"; // restore cursor position
+            if ($this->_options['ansi_clear']) {
+                print "\x1b[2K\x1b[u"; // restore cursor position
+            } else {
+                print "\x1b[u"; // restore cursor position
+            }
         } else {
             print str_repeat(chr(8), $this->_rlen);
         }
     }
     // }}}
+
+    // {{{ format_seconds()
+    /**
+     * Returns a string containing the formatted number of seconds
+     *
+     * @param float The number of seconds
+     * @return string
+     */
+    function _formatSeconds($seconds) 
+    {
+        $hou = floor($seconds/3600);
+        $min = floor(($seconds - $hou * 3600) / 60);
+        $sec = $seconds - $hou * 3600 - $min * 60;
+        if ($hou == 0) {
+            if (version_compare(PHP_VERSION, '4.3.7', 'ge')) {
+                $format = '%2$02d:%3$05.2f';
+            } else {
+                $format = '%2$02d:%3$02.2f';
+            }
+        } elseif ($hou < 100) {
+            $format = '%02d:%02d:%02d';
+        } else {
+            $format = '%05d:%02d';
+        }
+        return sprintf($format, $hou, $min, $sec);
+    }
+    // }}}
+
+    function _fetchTime() {
+        if (!function_exists('microtime')) {
+            return time();
+        }
+        if (version_compare(PHP_VERSION, '5.0.0', 'ge')) {
+            return microtime(true);
+        }
+        return array_sum(explode(' ', microtime()));
+    }
+
+    function _addDatapoint($val) {
+        if (count($this->_rate_datapoints) 
+            == $this->_options['num_datapoints']) {
+            array_shift($this->_rate_datapoints);
+        }
+        $this->_rate_datapoints[] = array(
+            'time' => $this->_fetchTime(),
+            'value' => $val,
+        );
+    }
+
+    function _generateEstimate() {
+        if (count($this->_rate_datapoints) < 2) {
+            return 0.0;
+        }
+        $first = $this->_rate_datapoints[0];
+        $last = end($this->_rate_datapoints);
+        return ($this->_target_num - $last['value'])/($last['value'] - $first['value']) * ($last['time'] - $first['time']);
+    }
 }
+

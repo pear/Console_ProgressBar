@@ -1,13 +1,7 @@
-<?php
-/**
-
 In general, to generate a progress bar you will call the constructor, then call
 the update() method in a loop. 
 You can use the reset() method to reuse one object to display another bar. Its
 parameters are the same as the constructor.
-
-Those 3 methods are explained afterwards, if you want to see examples, look at
-the bottom of the file.
 
 The Constructor expects 5 to 6 arguments:
 - The first argument is the format string used to display the progress
@@ -19,6 +13,8 @@ The Constructor expects 5 to 6 arguments:
     %max%         The maximum malue (the "target" value)
     %fraction%    The same as %current%/%max%
     %percent%     The status in percent
+    %elapsed%     The elapsed time
+    %estimate%    An estimate for the remaining time
   More placeholders will follow. A format string like:
   "* stuff.tar %fraction% KB [%bar%] %percent%"
   will lead to a bar looking like this:
@@ -66,26 +62,10 @@ The Constructor expects 5 to 6 arguments:
     ansi_terminal      | false |  If this option is true, a better
                        |       |  (faster) method for erasing the bar is
                        |       |  used.
+    ansi_clear         | false |  If the bar should be cleared everytime
+    num_datapoints     | 5     |  How many datapoints to use to create 
+                       |       |  the estimated remaining time 
 
 The update() method expects just one parameter, the current status (somewhere
 between 0 and the target number passed to the constructor) and refreshes the
 display (or starts it, if it's the first call).
-*/
-
-require_once 'Console/ProgressBar.php';
-
-print "This will display a very simple bar:\n";
-$bar = new Console_ProgressBar('%bar%', '=', ' ', 80, 3);
-for ($i = 0; $i <= 3; $i++) {
-    $bar->update($i);
-    sleep(1);
-}
-print "\n\n";
-
-print "A more complicated bar, showing current status in numbers as well:\n";
-$bar->reset('* %fraction% [%bar%] %percent%', '=>', '-', 80, 7);
-for ($i = 0; $i <= 7; $i++) {
-    $bar->update($i);
-    sleep(1);
-}
-print "\n";

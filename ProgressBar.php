@@ -64,15 +64,19 @@ class Console_ProgressBar {
      * Options, like the precision used to display the numbers
      */
     var $_options = array();
-     /**
-      * Length to erase
-      */
+    /**
+     * Length to erase
+     */
     var $_rlen = 0;
-     /**
-      * When the progress started
-      */
+    /**
+     * When the progress started
+     */
     var $_start_time = null;
     var $_rate_datapoints = array();
+    /**
+     * Time when the bar was last drawn
+     */
+    var $_last_update_time = 0.0;
     // }}}
     
     // constructor() {{{
@@ -160,10 +164,15 @@ class Console_ProgressBar {
      *                        |       |  the width of the bar alone.
      *     ansi_terminal      | false |  If this option is true, a better
      *                        |       |  (faster) method for erasing the bar is
-     *                        |       |  used.
+     *                        |       |  used. CAUTION - this is known to cause
+     *                        |       |  problems with some terminal emulators,
+     *                        |       |  for example Eterm.
      *     ansi_clear         | false |  If the bar should be cleared everytime
      *     num_datapoints     | 5     |  How many datapoints to use to create 
      *                        |       |  the estimated remaining time 
+     *     min_draw_interval  | 0.0   |  If the last call to update() was less
+     *                        |       |  than this amount of seconds ago, 
+     *                        |       |  don't update.
      * </pre>
      *
      * @param string The format string
@@ -187,6 +196,7 @@ class Console_ProgressBar {
             'ansi_terminal' => false,
             'ansi_clear' => false,
             'num_datapoints' => 5,
+            'min_draw_interval' => 0.0,
         );
         $intopts = array();
         foreach ($default_options as $key => $value) {
@@ -257,18 +267,24 @@ class Console_ProgressBar {
      */
     function update($current)
     {
-        $this->_addDatapoint($current);
+        $time = $this->_fetchTime();
+        $this->_addDatapoint($current, $time);
         if ($this->_first) {
             if ($this->_options['ansi_terminal']) {
-                print "\x1b[s"; // save cursor position
+                echo "\x1b[s"; // save cursor position
             }
             $this->_first = false;
             $this->_start_time = $this->_fetchTime();
             $this->display($current);
             return;
         }
+        if ($time - $this->_last_update_time < 
+            $this->_options['min_draw_interval'] and $current != $this->_target_num) {
+            return;
+        }
         $this->erase();
         $this->display($current);
+        $this->_last_update_time = $time;
     }
     // }}}
     
@@ -299,7 +315,7 @@ class Console_ProgressBar {
             $this->_rlen = $this->_tlen;
         // fix for php versions between 4.3.7 and 5.x.y(?)
         } elseif ($this->_rlen < $this->_tlen) {
-            print str_repeat(' ', $this->_tlen - $this->_rlen);
+            echo str_repeat(' ', $this->_tlen - $this->_rlen);
             $this->_rlen = $this->_tlen;
         } 
         return true;
@@ -316,12 +332,12 @@ class Console_ProgressBar {
     {
         if ($this->_options['ansi_terminal'] and !$clear) {
             if ($this->_options['ansi_clear']) {
-                print "\x1b[2K\x1b[u"; // restore cursor position
+                echo "\x1b[2K\x1b[u"; // restore cursor position
             } else {
-                print "\x1b[u"; // restore cursor position
+                echo "\x1b[u"; // restore cursor position
             }
         } else {
-            print str_repeat(chr(8), $this->_rlen);
+            echo str_repeat(chr(8), $this->_rlen);
         }
     }
     // }}}
@@ -363,13 +379,13 @@ class Console_ProgressBar {
         return array_sum(explode(' ', microtime()));
     }
 
-    function _addDatapoint($val) {
+    function _addDatapoint($val, $time) {
         if (count($this->_rate_datapoints) 
             == $this->_options['num_datapoints']) {
             array_shift($this->_rate_datapoints);
         }
         $this->_rate_datapoints[] = array(
-            'time' => $this->_fetchTime(),
+            'time' => $time,
             'value' => $val,
         );
     }
